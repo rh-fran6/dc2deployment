@@ -11,7 +11,7 @@ This repository contains a Python script that converts `DeploymentConfig` manife
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/your-repo/deployment-config-converter.git
+    git clone https://github.com/rh-fran6/dc2deployment.git
     cd deployment-config-converter
     ```
 
@@ -42,7 +42,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Thanks to the OpenShift and Kubernetes communities for their ongoing support and development.
+- Thanks for the efforts of https://gist.github.com/underguiz/3f61eed7942bfb221696be6019da0d22 which was heavily referred to.
 
 ## Contact
 
