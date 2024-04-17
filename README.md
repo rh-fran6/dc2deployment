@@ -42,7 +42,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Thanks for the efforts of https://gist.github.com/underguiz/3f61eed7942bfb221696be6019da0d22 which was heavily referred to.
+- Thanks for the efforts of [underguiz](https://gist.github.com/underguiz/3f61eed7942bfb221696be6019da0d22) which was heavily referred to.
 
 ## Contact
 
