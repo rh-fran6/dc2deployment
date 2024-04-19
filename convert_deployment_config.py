@@ -228,6 +228,7 @@ def process_file(input_file_path):
 
                           if contents.get('kind') == 'Route':
                               routename = contents['metadata']['name']
+                              print(routename)
                               print()
                               print(f"Processing '{file_name}' Route...")
                               print("\n" + "=" * 80 + "\n")  # Separator for better readability
