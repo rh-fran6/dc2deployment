@@ -1,6 +1,6 @@
 # DeploymentConfig to Deployment Converter
 
-This repository contains a Python script that converts `DeploymentConfig` manifests from OpenShift to `Deployment` manifests for Kubernetes. The script searches for manifests in a directory called `deployment_config`, converts them, and saves the converted files in a directory called `deployment`. It also maintains copies of the original files in a `conversion_items` directory.
+This repository contains a Python script that converts `DeploymentConfig` manifests from OpenShift to `Deployment` manifests for Kubernetes. The script searches for manifests in a directory called `sourceDirectory`, converts them, and saves the converted files in a directory called `outputDirectory`. It also maintains copies of the original files in a `workingDirectory` directory. It also modifies YAML files by removing single quotes from Helm template expressions and replacing environment variables.
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ This repository contains a Python script that converts `DeploymentConfig` manife
     ```
 
 2. **Prepare the `deployment_config` directory**:
-    - Place the `DeploymentConfig` manifests you want to convert into the `deployment_config` directory.
+    - Place the `DeploymentConfig` manifests you want to convert into the `sourceDirectory` directory.
 
 3. **Run the script**:
     ```bash
@@ -24,8 +24,8 @@ This repository contains a Python script that converts `DeploymentConfig` manife
     ```
 
 4. **Check the output**:
-    - The converted manifests will be saved in the `deployment` directory with filenames in the format `metadata.name_deployment.yaml`.
-    - The original `DeploymentConfig` manifests are copied to the `conversion_items` directory with filenames in the format `metadata.name_deploymentconfig.yaml`.
+    - The converted manifests will be saved in the `outputDirectory` directory with filenames in the format `metadata.name_deployment.yaml`.
+    - The original `DeploymentConfig` manifests are copied to the `workingDirectory` directory with filenames in the format `metadata.name_deploymentconfig.yaml`.
 
 ## Error Handling
 
