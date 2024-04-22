@@ -12,7 +12,7 @@ This repository contains a Python script that converts `DeploymentConfig` manife
 1. **Clone the repository**:
     ```bash
     git clone https://github.com/rh-fran6/dc2deployment.git
-    cd deployment-config-converter
+    cd dc2deployment
     ```
 
 2. **Prepare the `deployment_config` directory**:

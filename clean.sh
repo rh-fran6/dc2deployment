@@ -10,3 +10,4 @@ echo Removing working directory
 rm -rf workingDirectory
 
 
+clear
