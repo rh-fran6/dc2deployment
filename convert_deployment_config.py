@@ -148,8 +148,7 @@ def process_file(input_file_path):
 
             ## Generate Helm Chart boiler plate
                 
-            generate_helm_chart_boilerplate(app_name)          
-
+            generate_helm_chart_boilerplate(app_name)   
 
             ## If a template file, Extract different components
             for l in list_objects:             
@@ -183,6 +182,7 @@ def process_file(input_file_path):
                        yaml.dump(l, file)
                     print(app_name + " cronjob done... ")
                     print()
+                    update_cronjob_helm_values(l, app_name)
 
     except Exception as e:
         print(f"Error processing file {input_file_path}: {e}")
@@ -247,6 +247,31 @@ def update_service_helm_values (data, app_name):
             elif key == 'annotations':
                data[key] = {}
     generate_helm_chart_resources(data, app_name, 'service' )
+
+def update_cronjob_helm_values (data, app_name): 
+
+    for key, value in data.items():
+        if isinstance(value, dict):
+            update_route_helm_values(value, app_name)
+        else:
+            if key == 'name':
+                data[key] = '{{ .Values.name }}'
+                
+            elif key == 'namespace':
+                data[key] = '{{ .Release.Namespace }}'
+
+            elif value == app_name:
+                data[key] = '{{ .Values.name }}'
+
+            elif key == 'app.kubernetes.io/part-of':
+                data[key] = '{{ .Values.name }}'
+
+            elif key == 'host':
+                data[key] = "{{ .Values.route.name }}"
+
+            elif key == 'annotations':
+               data[key] = {}
+    generate_helm_chart_resources(data, app_name, 'cronjob' )
 
 def generate_helm_chart_boilerplate (app_name):
     helm_chart_directory = output_folder + "/" + app_name
