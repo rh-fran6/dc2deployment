@@ -34,7 +34,7 @@ This repository contains a Python script that converts `DeploymentConfig` manife
 
 ## Contributing
 
-We welcome contributions to this project. Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute.
+We welcome contributions to this project. Please raise a PR.
 
 ## License
 
