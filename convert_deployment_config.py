@@ -7,7 +7,8 @@ import re
 input_folder = 'sourceDirectory'
 output_folder = 'outputDirectory'
 conversion_items_folder = 'workingDirectory'
-registry_url = 'my-image-registry.mydomain.com:5000'
+registry_url = 'image-registry.openshift-image-registry.svc:5000'
+subdomain = 'apps.033gl.gl.cl'
 
 # Ensure the output and intermediate folders exist; create them if not
 os.makedirs(output_folder, exist_ok=True)
@@ -46,11 +47,15 @@ def convert_deploymentconfig_to_deployment(data, app_name):
     try:
         for k in data['spec']['triggers']:
             if 'imageChangeParams' in k:
-                new_image_name = registry_url + '/' + k['imageChangeParams']['from']['name']
-                data['spec']['template']['spec']['containers'][0]['image'] = new_image_name
+
+                imageName = (k['imageChangeParams']['from']['name']).split(':')[0]                
+                imagePath = k['imageChangeParams']['from']['namespace']
+                newImage = registry_url + '/' + imagePath + '/' + imageName
+                routePath = imageName + '-' + imagePath
+                data['spec']['template']['spec']['containers'][0]['image'] = newImage
 
     except (KeyError, IndexError):
-        print(f"Error handling imageChangeParams in manifest {data['metadata'].get('name')}, skipping.")
+        print(f"Error handling imageChangeParams in manifest {data['metadata'].get('name')}, 1skipping.")
 
     keys_to_remove = ['triggers', 'test', 'resources', 'status']
     for key in keys_to_remove:
@@ -73,7 +78,7 @@ def convert_deploymentconfig_to_deployment(data, app_name):
         except KeyError:
             pass
 
-    return data
+    return [data, routePath]
 
 
 def modify_yaml(file_path, output_file_path):
@@ -216,10 +221,12 @@ def update_route_helm_values(data, app_name):
                 data[key] = '{{ .Values.name }}'
 
             elif key == 'host':
-                data[key] = "{{ .Values.route.name }}"
+                data[key] = "{{ .Values.route.name }}"+":"+"{{ .Values.route.domain}}"
 
             elif key == 'annotations':
                data[key] = {}
+
+    # print(data)
 
     generate_helm_chart_resources(data, app_name, 'route' )
 
@@ -242,6 +249,7 @@ def update_service_helm_values (data, app_name):
                 data[key] = '{{ .Values.name }}'
 
             elif key == 'host':
+                ll = data['spec']['host']
                 data[key] = "{{ .Values.route.name }}"
 
             elif key == 'annotations':
@@ -252,7 +260,7 @@ def update_cronjob_helm_values (data, app_name):
 
     for key, value in data.items():
         if isinstance(value, dict):
-            update_route_helm_values(value, app_name)
+            update_cronjob_helm_values(value, app_name)
         else:
             if key == 'name':
                 data[key] = '{{ .Values.name }}'
@@ -295,23 +303,26 @@ def generate_helm_chart_deployment_data(data, app_name):
     templates_directory = os.path.join(helm_chart_directory, 'templates')
     values_yaml_file = os.path.join(helm_chart_directory, 'values.yaml')
 
-    matchLine = val['spec']['template']['spec']['containers'][0]['image'].split(":")
-    mod = matchLine[0]+matchLine[1]
+    matchLine = val[0]['spec']['template']['spec']['containers'][0]['image'].split("/")
+
     values = {
-           'replicas': val['spec']['replicas'],
-           'name': val['metadata']['name'],
-           'env': 'dev',  # Placeholder. Update Values file for each environment
+           'replicas': val[0]['spec']['replicas'],
+           'name': val[0]['metadata']['name'],
+           'env': 'dev',
            'route': {
-               'name': 'testname.placeholder.com',
+               'name': val[1],
+               'domain': subdomain
            },
            'resources': {},
            'repository': {
-               'image': mod,
+               'image': matchLine[0],
+               'path': matchLine[1],
+               'name': matchLine[2],
                'tag': 'dev'
            }
        }
        
-    container = val['spec']['template']['spec']['containers'][0]
+    container = val[0]['spec']['template']['spec']['containers'][0]
     
     if 'resources' in container:
         container_resources = container['resources']
@@ -319,39 +330,39 @@ def generate_helm_chart_deployment_data(data, app_name):
         if 'limits' in container_resources:
             res1 = {
                     'limits': {
-                        'cpu': val['spec']['template']['spec']['containers'][0]['resources']['limits']['cpu'],
-                        'memory': val['spec']['template']['spec']['containers'][0]['resources']['limits']['memory']
+                        'cpu': val[0]['spec']['template']['spec']['containers'][0]['resources']['limits']['cpu'],
+                        'memory': val[0]['spec']['template']['spec']['containers'][0]['resources']['limits']['memory']
                     }
                 }
             values['resources'].update(res1)
-            val['spec']['template']['spec']['containers'][0]['resources']['limits']['cpu'] = "{{ .Values.resources.limits.cpu }}"
-            val['spec']['template']['spec']['containers'][0]['resources']['limits']['memory'] = "{{ .Values.resources.limits.memory }}"
+            val[0]['spec']['template']['spec']['containers'][0]['resources']['limits']['cpu'] = "{{ .Values.resources.limits.cpu }}"
+            val[0]['spec']['template']['spec']['containers'][0]['resources']['limits']['memory'] = "{{ .Values.resources.limits.memory }}"
     
         if 'requests' in container_resources:
             res1 = {
                     'requests': {
-                        'cpu': val['spec']['template']['spec']['containers'][0]['resources']['requests']['cpu'],
-                        'memory': val['spec']['template']['spec']['containers'][0]['resources']['requests']['memory']
+                        'cpu': val[0]['spec']['template']['spec']['containers'][0]['resources']['requests']['cpu'],
+                        'memory': val[0]['spec']['template']['spec']['containers'][0]['resources']['requests']['memory']
                     }
                 }
             values['resources'].update(res1)
-            val['spec']['template']['spec']['containers'][0]['resources']['requests']['cpu'] = "{{ .Values.resources.requests.cpu }}"
-            val['spec']['template']['spec']['containers'][0]['resources']['requests']['memory'] = "{{ .Values.resources.requests.memory }}"
+            val[0]['spec']['template']['spec']['containers'][0]['resources']['requests']['cpu'] = "{{ .Values.resources.requests.cpu }}"
+            val[0]['spec']['template']['spec']['containers'][0]['resources']['requests']['memory'] = "{{ .Values.resources.requests.memory }}"
 
-    val['spec']['replicas'] = "{{ .Values.replicas }}"
-    val['spec']['selector']['matchLabels']['app'] = "{{ .Values.name }}"
-    val['spec']['template']['metadata']['labels']['app'] = "{{ .Values.name }}"
-    val['spec']['template']['spec']['containers'][0]['image'] = "{{ .Values.repository.image }}"+":"+"{{ .Values.repository.tag}}"
-    val['spec']['template']['spec']['containers'][0]['name'] = "{{ .Values.name }}"
-    val['metadata']['namespace'] = "{{ .Release.Namespace }}"
-    val['metadata']['name'] = "{{ .Values.name }}"
+    val[0]['spec']['replicas'] = "{{ .Values.replicas }}"
+    val[0]['spec']['selector']['matchLabels']['app'] = "{{ .Values.name }}"
+    val[0]['spec']['template']['metadata']['labels']['app'] = "{{ .Values.name }}"
+    val[0]['spec']['template']['spec']['containers'][0]['image'] = "{{.Values.repository.image}}"+"/"+"{{.Values.repository.path}}"+"/"+"{{.Values.repository.name}}"+":"+"{{.Values.repository.tag}}"
+    val[0]['spec']['template']['spec']['containers'][0]['name'] = "{{ .Values.name }}"
+    val[0]['metadata']['namespace'] = "{{ .Release.Namespace }}"
+    val[0]['metadata']['name'] = "{{ .Values.name }}"
     
     with open(values_yaml_file, 'w') as file:
         yaml.dump(values, file, default_flow_style=False)
 
     output_dc_path = os.path.join(templates_directory, f"{app_name}_deployment.yaml") 
     with open(output_dc_path, "w") as f:
-        yaml.dump(val, f)  
+        yaml.dump(val[0], f)  
 
     cleanup_yaml_files(templates_directory)  
         

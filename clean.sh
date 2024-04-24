@@ -13,3 +13,5 @@ rm -rf workingDirectory
 rm -rf s3Policy*
 
 rm -rf Trust*
+
+clear
